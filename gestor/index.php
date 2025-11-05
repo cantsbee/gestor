@@ -22,6 +22,7 @@ $comics = listarComics($filtitulo, $filestado);
 </head>
 
 <body>
+// creamos un form para poder llevar a cabo el método post y guardar nuestros cómics
     <form id="frm" name="frm" action="funciones.php" method="post">
 
         <!-- Campos ocultos para JS -->

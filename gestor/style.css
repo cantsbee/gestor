@@ -1,7 +1,8 @@
-.frm {
+frm {
     display: flex;
     align-content: center;
     background-color: black;
     color: bisque;
+    max-width: 400px;
 
 }

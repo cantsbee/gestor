@@ -1,102 +1,57 @@
-
 <?php
+// funciones.php — CRUD con JSON
 
-define("FILE_PATH", "comics.json");
+const DB = "comics-data.json";
 
-/* --------------------------------------------------
-   Leer cómics
----------------------------------------------------*/
-function leerComics() {
-    if (!file_exists(FILE_PATH)) {
-        return [];
-    }
+function leerDB() {
+    if (!file_exists(DB)) return [];
+    $json = file_get_contents(DB);
+    return json_decode($json, true) ?: [];
+}
 
-    $lineas = file(FILE_PATH, FILE_IGNORE_NEW_LINES);
-    $comics = [];
+function guardarDB($data) {
+    file_put_contents(DB, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+}
 
-    foreach ($lineas as $linea) {
-        list($id, $titulo, $autor, $estado, $prestado, $localizacion) = explode(";", $linea);
-        $comics[] = [
-            "id" => $id,
-            "titulo" => $titulo,
-            "autor" => $autor,
-            "estado" => $estado,
-            "prestado" => $prestado === "true",
-            "localizacion" => $localizacion
+$action = $_GET['action'] ?? '';
+$data = leerDB();
+
+switch ($action) {
+    case 'agregar':
+        $nuevo = [
+            'id' => time(),
+            'titulo' => $_POST['titulo'] ?? '',
+            'autor' => $_POST['autor'] ?? '',
+            'estado' => $_POST['estado'] ?? '',
+            'prestado' => ($_POST['prestado'] ?? 'false') === 'true',
+            'localizacion' => $_POST['localizacion'] ?? ''
         ];
-    }
+        $data[] = $nuevo;
+        guardarDB($data);
+        break;
 
-    return $comics;
-}
-
-/* --------------------------------------------------
-   Guardar cómics
----------------------------------------------------*/
-function guardarComics($comics) {
-    $contenido = "";
-    foreach ($comics as $c) {
-        $contenido .= implode(";", [
-            $c["id"],
-            $c["titulo"],
-            $c["autor"],
-            $c["estado"],
-            $c["prestado"] ? "true" : "false",
-            $c["localizacion"]
-        ]) . "\n";
-    }
-    file_put_contents(FILE_PATH, $contenido);
-}
-
-/* --------------------------------------------------
-   Agregar cómic
----------------------------------------------------*/
-function agregarComic($titulo, $autor, $estado, $prestado, $localizacion) {
-    $comics = leerComics();
-    $id = count($comics) > 0 ? end($comics)["id"] + 1 : 1;
-
-    $nuevo = [
-        "id" => $id,
-        "titulo" => $titulo,
-        "autor" => $autor,
-        "estado" => $estado,
-        "prestado" => $prestado,
-        "localizacion" => $localizacion
-    ];
-
-    $comics[] = $nuevo;
-    guardarComics($comics);
-
-    echo "✅ Cómic agregado correctamente<br>";
-}
-// función para eliminar
-   Eliminar
-
-function eliminarComic($id) {
-    $comics = leerComics();
-    $nuevoArray = [];
-
-    foreach ($comics as $c) {
-        if ($c["id"] != $id) {
-            $nuevoArray[] = $c;
+    case 'modificar':
+        $id = $_POST['id'];
+        foreach ($data as &$comic) {
+            if ($comic['id'] == $id) {
+                $comic['titulo'] = $_POST['titulo'] ?? $comic['titulo'];
+                $comic['autor'] = $_POST['autor'] ?? $comic['autor'];
+                $comic['estado'] = $_POST['estado'] ?? $comic['estado'];
+                $comic['prestado'] = ($_POST['prestado'] ?? 'false') === 'true';
+                $comic['localizacion'] = $_POST['localizacion'] ?? $comic['localizacion'];
+                break;
+            }
         }
-    }
+        guardarDB($data);
+        break;
 
-    guardarComics($nuevoArray);
-    echo " Cómic eliminado correctamente<br>";
+    case 'eliminar':
+        $id = $_POST['id'];
+        $data = array_filter($data, fn($c) => $c['id'] != $id);
+        guardarDB(array_values($data));
+        break;
 }
 
-// función q actualiza el estado
-   Actualizar estado
-
-function actualizarEstado($id, $nuevoEstado) {
-    $comics = leerComics();
-    foreach ($comics as &$c) {
-        if ($c["id"] == $id) {
-            $c["estado"] = $nuevoEstado;
-            guardarComics($comics);
-            echo "✅ Estado actualizado correctamente<br>";
-            return;
-        }
-    }
-    echo "⚠️ Cómic no encontrado<br>";
-}
+header("Location: index.php");
+exit;
+?>
